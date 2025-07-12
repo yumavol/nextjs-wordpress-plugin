@@ -360,7 +360,7 @@ class Settings
    */
   private function revalidate_common_pages(Revalidation $revalidation): void
   {
-    $common_slugs = ['/', '/blog', '/about'];
+    $common_slugs = ['/', '/blog', '/about', '/program', '/community-center'];
 
     $recent_posts = get_posts([
       'numberposts' => 10,

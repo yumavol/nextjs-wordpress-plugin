@@ -76,9 +76,6 @@ class Revalidation
 			case 'post':
 				$slug = "/blog/{$post_name}";
 				break;
-			case 'product':
-				$slug = "/product/{$post_name}";
-				break;
 			default:
 				$slug = $post_name;
 				break;

@@ -38,6 +38,9 @@ class Revalidation
 	public function hooks(): void
 	{
 		add_action('transition_post_status', [$this, 'transition_handler'], 10, 3);
+		add_action('created_category', [$this, 'category_change_handler'], 10, 3);
+		add_action('edited_category', [$this, 'category_change_handler'], 10, 3);
+		add_action('delete_category', [$this, 'category_delete_handler'], 10, 4);
 	}
 
 	/**
@@ -83,6 +86,43 @@ class Revalidation
 
 		// Trigger revalidation.
 		$this->on_demand_revalidation($slug);
+	}
+
+	/**
+	 * Handles category creation and editing for revalidation purposes.
+	 *
+	 * This method is triggered when a category is created or edited.
+	 * It revalidates the blog page since category changes may affect the blog listing.
+	 *
+	 * @param int   $term_id Term ID.
+	 * @param int   $tt_id   Term taxonomy ID.
+	 * @param array $args    Arguments passed to wp_insert_term() or wp_update_term().
+	 *
+	 * @return void
+	 */
+	public function category_change_handler(int $term_id, int $tt_id, array $args): void
+	{
+		// Trigger revalidation of the blog page.
+		$this->on_demand_revalidation('/blog');
+	}
+
+	/**
+	 * Handles category deletion for revalidation purposes.
+	 *
+	 * This method is triggered when a category is deleted.
+	 * It revalidates the blog page since category deletion may affect the blog listing.
+	 *
+	 * @param int     $term_id       Term ID.
+	 * @param int     $tt_id         Term taxonomy ID.
+	 * @param mixed   $deleted_term  Copy of the already-deleted term.
+	 * @param array   $object_ids    List of term object IDs.
+	 *
+	 * @return void
+	 */
+	public function category_delete_handler(int $term_id, int $tt_id, $deleted_term, array $object_ids): void
+	{
+		// Trigger revalidation of the blog page.
+		$this->on_demand_revalidation('/blog');
 	}
 
 	/**

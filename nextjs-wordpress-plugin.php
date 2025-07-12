@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Plugin Name: Next.js WordPress Plugin
  * Plugin URI:  https://github.com/gregrickaby/nextjs-wordpress-plugin
@@ -14,24 +15,25 @@
 namespace NextJS_WordPress_Plugin;
 
 // Exit if accessed directly.
-if ( ! defined( 'ABSPATH' ) ) {
+if (! defined('ABSPATH')) {
 	die;
 }
 
 // Define constants.
-define( 'NEXTJS_WORDPRESS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
-define( 'NEXTJS_WORDPRESS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'NEXTJS_WORDPRESS_PLUGIN_VERSION', '1.0.6' );
+define('NEXTJS_WORDPRESS_PLUGIN_DIR', plugin_dir_path(__FILE__));
+define('NEXTJS_WORDPRESS_PLUGIN_URL', plugin_dir_url(__FILE__));
+define('NEXTJS_WORDPRESS_PLUGIN_VERSION', '1.0.6');
 
 // Require files.
 $autoload_file = __DIR__ . '/vendor/autoload.php';
-if ( file_exists( $autoload_file ) ) {
+if (file_exists($autoload_file)) {
 	require $autoload_file;
 } else {
 	require_once 'src/classes/Blocks.php';
 	require_once 'src/classes/Links.php';
 	require_once 'src/classes/Plugin.php';
 	require_once 'src/classes/Revalidation.php';
+	require_once 'src/classes/Settings.php';
 	require_once 'src/classes/YoastSEO.php';
 }
 

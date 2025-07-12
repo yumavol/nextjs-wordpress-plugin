@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Next.js WordPress Plugin: revalidation functionality
  *
@@ -18,12 +19,14 @@ namespace NextJS_WordPress_Plugin;
  * @author Greg Rickaby
  * @since 1.0.6
  */
-class Revalidation {
+class Revalidation
+{
 
 	/**
 	 * Constructor.
 	 */
-	public function __construct() {
+	public function __construct()
+	{
 		$this->hooks();
 	}
 
@@ -32,8 +35,9 @@ class Revalidation {
 	 *
 	 * @return void
 	 */
-	public function hooks(): void {
-		add_action( 'transition_post_status', [ $this, 'transition_handler' ], 10, 3 );
+	public function hooks(): void
+	{
+		add_action('transition_post_status', [$this, 'transition_handler'], 10, 3);
 	}
 
 	/**
@@ -49,14 +53,15 @@ class Revalidation {
 	 *
 	 * @return void
 	 */
-	public function transition_handler( string $new_status, string $old_status, object $post ): void {
+	public function transition_handler(string $new_status, string $old_status, object $post): void
+	{
 		// Do not run on autosave or cron.
-		if ( ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) || ( defined( 'DOING_CRON' ) && DOING_CRON ) ) {
+		if ((defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) || (defined('DOING_CRON') && DOING_CRON)) {
 			return;
 		}
 
 		// Ignore drafts and inherited posts.
-		if ( ( 'draft' === $new_status && 'draft' === $old_status ) || 'inherit' === $new_status ) {
+		if (('draft' === $new_status && 'draft' === $old_status) || 'inherit' === $new_status) {
 			return;
 		}
 
@@ -67,12 +72,12 @@ class Revalidation {
 		/**
 		 * Configure the $slug based on your post types and front-end routing.
 		 */
-		switch ( $post_type ) {
+		switch ($post_type) {
 			case 'post':
 				$slug = "/blog/{$post_name}";
 				break;
-			case 'book':
-				$slug = "/books/{$post_name}";
+			case 'product':
+				$slug = "/product/{$post_name}";
 				break;
 			default:
 				$slug = $post_name;
@@ -80,7 +85,7 @@ class Revalidation {
 		}
 
 		// Trigger revalidation.
-		$this->on_demand_revalidation( $slug );
+		$this->on_demand_revalidation($slug);
 	}
 
 	/**
@@ -93,28 +98,69 @@ class Revalidation {
 	 *
 	 * @return void
 	 */
-	public function on_demand_revalidation( string $slug ): void {
-		// Check necessary constants and slug.
-		if ( ! defined( 'NEXTJS_FRONTEND_URL' ) || ! defined( 'NEXTJS_REVALIDATION_SECRET' ) || ! $slug ) {
+	public function on_demand_revalidation(string $slug): void
+	{
+		// Get frontend URL and revalidation secret from constants or settings.
+		$frontend_url = $this->get_frontend_url();
+		$revalidation_secret = $this->get_revalidation_secret();
+
+		// Check necessary values and slug.
+		if (! $frontend_url || ! $revalidation_secret || ! $slug) {
 			return;
 		}
 
 		// Construct the revalidation URL.
-		$revalidation_url = add_query_arg( 'slug', $slug, esc_url_raw( rtrim( NEXTJS_FRONTEND_URL, '/' ) . '/api/revalidate' ) );
+		$revalidation_url = add_query_arg('slug', $slug, esc_url_raw(rtrim($frontend_url, '/') . '/api/revalidate'));
 
 		// Make a GET request to the revalidation endpoint.
 		$response = wp_remote_get(
 			$revalidation_url,
 			[
 				'headers' => [
-					'x-vercel-revalidation-secret' => NEXTJS_REVALIDATION_SECRET,
+					'x-vercel-revalidation-secret' => $revalidation_secret,
 				],
 			]
 		);
 
 		// Handle response errors.
-		if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
-			error_log( 'Revalidation error: ' . wp_remote_retrieve_response_message( $response ) ); // phpcs:ignore
+		if (is_wp_error($response) || 200 !== wp_remote_retrieve_response_code($response)) {
+			error_log('Revalidation error: ' . wp_remote_retrieve_response_message($response)); // phpcs:ignore
 		}
+	}
+
+	/**
+	 * Get the frontend URL from constants or settings.
+	 *
+	 * @return string|null Frontend URL or null if not available.
+	 */
+	private function get_frontend_url(): ?string
+	{
+		if (defined('NEXTJS_FRONTEND_URL')) {
+			return NEXTJS_FRONTEND_URL;
+		}
+
+		if (class_exists('NextJS_WordPress_Plugin\Settings')) {
+			return Settings::get_setting('frontend_url');
+		}
+
+		return null;
+	}
+
+	/**
+	 * Get the revalidation secret from constants or settings.
+	 *
+	 * @return string|null Revalidation secret or null if not available.
+	 */
+	private function get_revalidation_secret(): ?string
+	{
+		if (defined('NEXTJS_REVALIDATION_SECRET')) {
+			return NEXTJS_REVALIDATION_SECRET;
+		}
+
+		if (class_exists('NextJS_WordPress_Plugin\Settings')) {
+			return Settings::get_setting('revalidation_secret');
+		}
+
+		return null;
 	}
 }

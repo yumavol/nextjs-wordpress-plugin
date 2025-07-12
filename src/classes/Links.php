@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Next.js WordPress Plugin: links functionality
  *
@@ -20,7 +21,8 @@ use DOMDocument;
  * @author Greg Rickaby
  * @since 1.0.6
  */
-class Links {
+class Links
+{
 
 	/**
 	 * Frontend URL.
@@ -39,11 +41,12 @@ class Links {
 	/**
 	 * Constructor.
 	 */
-	public function __construct() {
+	public function __construct()
+	{
 
 		// Set the frontend URL and preview secret.
 		$this->frontend_url   = $this->get_frontend_url();
-		$this->preview_secret = defined( 'NEXTJS_PREVIEW_SECRET' ) ? NEXTJS_PREVIEW_SECRET : null;
+		$this->preview_secret = $this->get_preview_secret();
 
 		// Apply the hooks and filters.
 		$this->hooks();
@@ -54,12 +57,13 @@ class Links {
 	 *
 	 * @return void
 	 */
-	public function hooks() {
-		add_filter( 'preview_post_link', [ $this, 'set_headless_preview_link' ], 10, 2 );
-		add_filter( 'home_url', [ $this, 'set_headless_home_url' ], 10, 3 );
-		add_filter( 'rest_prepare_page', [ $this, 'set_headless_rest_preview_link' ], 10, 2 );
-		add_filter( 'rest_prepare_post', [ $this, 'set_headless_rest_preview_link' ], 10, 2 );
-		add_action( 'save_post', [ $this, 'override_post_links' ] );
+	public function hooks()
+	{
+		add_filter('preview_post_link', [$this, 'set_headless_preview_link'], 10, 2);
+		add_filter('home_url', [$this, 'set_headless_home_url'], 10, 3);
+		add_filter('rest_prepare_page', [$this, 'set_headless_rest_preview_link'], 10, 2);
+		add_filter('rest_prepare_post', [$this, 'set_headless_rest_preview_link'], 10, 2);
+		add_action('save_post', [$this, 'override_post_links']);
 	}
 
 	/**
@@ -71,17 +75,18 @@ class Links {
 	 * @param WP_Post $post Current post object.
 	 * @return string Modified headless preview link.
 	 */
-	public function set_headless_preview_link( string $link, WP_Post $post ): string {
+	public function set_headless_preview_link(string $link, WP_Post $post): string
+	{
 
 		// Return the original link if the frontend URL or preview secret are not defined.
-		if ( ! $this->frontend_url || ! $this->preview_secret ) {
+		if (! $this->frontend_url || ! $this->preview_secret) {
 			return $link;
 		}
 
 		// Update the preview link to point to the front-end.
 		return add_query_arg(
-			[ 'secret' => $this->preview_secret ],
-			esc_url_raw( "{$this->frontend_url}/preview/{$post->ID}" )
+			['secret' => $this->preview_secret],
+			esc_url_raw("{$this->frontend_url}/preview/{$post->ID}")
 		);
 	}
 
@@ -93,21 +98,22 @@ class Links {
 	 * @param string|null $scheme URL scheme.
 	 * @return string Modified frontend home URL.
 	 */
-	public function set_headless_home_url( string $url, string $path, $scheme = null ): string {
+	public function set_headless_home_url(string $url, string $path, $scheme = null): string
+	{
 		global $current_screen;
 
 		// Do not modify the URL for REST requests.
-		if ( 'rest' === $scheme ) {
+		if ('rest' === $scheme) {
 			return $url;
 		}
 
 		// Avoid modifying the URL in the block editor to ensure functionality.
-		if ( ( is_string( $current_screen ) || is_object( $current_screen ) ) && method_exists( $current_screen, 'is_block_editor' ) ) {
+		if ((is_string($current_screen) || is_object($current_screen)) && method_exists($current_screen, 'is_block_editor')) {
 			return $url;
 		}
 
 		// Do not modify the URL outside the WordPress admin.
-		if ( ! is_admin() ) {
+		if (! is_admin()) {
 			return $url;
 		}
 
@@ -115,12 +121,12 @@ class Links {
 		$base_url = $this->get_frontend_url();
 
 		// Return the original URL if the frontend URL is not defined.
-		if ( ! $base_url ) {
+		if (! $base_url) {
 			return $url;
 		}
 
 		// Return the modified URL.
-		return $path ? "{$base_url}/" . ltrim( $path, '/' ) : $base_url;
+		return $path ? "{$base_url}/" . ltrim($path, '/') : $base_url;
 	}
 
 	/**
@@ -134,22 +140,23 @@ class Links {
 	 * @param WP_Post          $post     The current post object.
 	 * @return WP_REST_Response Modified response object with updated preview link.
 	 */
-	public function set_headless_rest_preview_link( WP_REST_Response $response, WP_Post $post ): WP_REST_Response {
+	public function set_headless_rest_preview_link(WP_REST_Response $response, WP_Post $post): WP_REST_Response
+	{
 
 		// Check if the post status is 'draft' and set the preview link accordingly.
-		if ( 'draft' === $post->post_status ) {
-			$response->data['link'] = get_preview_post_link( $post );
+		if ('draft' === $post->post_status) {
+			$response->data['link'] = get_preview_post_link($post);
 			return $response;
 		}
 
 		// For published posts, modify the permalink to point to the frontend.
-		if ( 'publish' === $post->post_status ) {
+		if ('publish' === $post->post_status) {
 
 			// Get the post permalink.
-			$permalink = get_permalink( $post );
+			$permalink = get_permalink($post);
 
 			// Check if the permalink contains the site URL.
-			if ( false !== stristr( $permalink, get_site_url() ) ) {
+			if (false !== stristr($permalink, get_site_url())) {
 
 				// Replace the site URL with the frontend URL.
 				$response->data['link'] = str_ireplace(
@@ -173,19 +180,20 @@ class Links {
 	 *
 	 * @param int $post_id Post ID.
 	 */
-	public function override_post_links( int $post_id ): void {
+	public function override_post_links(int $post_id): void
+	{
 
 		// Remove the action to avoid an infinite loop.
-		remove_action( 'save_post', [ $this, 'override_post_links' ] );
+		remove_action('save_post', [$this, 'override_post_links']);
 
 		// Get the post.
-		$post = get_post( $post_id );
+		$post = get_post($post_id);
 
 		// No post or post is not a post or page.
-		if ( ! $post || 'post' !== $post->post_type || 'page' !== $post->post_type ) {
+		if (! $post || 'post' !== $post->post_type || 'page' !== $post->post_type) {
 
 			// Re-add the action.
-			add_action( 'save_post', [ $this, 'override_post_links' ] );
+			add_action('save_post', [$this, 'override_post_links']);
 
 			return;
 		}
@@ -195,32 +203,32 @@ class Links {
 
 		// Create a DOMDocument and load the HTML content.
 		$dom = new DOMDocument();
-		$dom->loadHTML( mb_convert_encoding( $post_content, 'HTML-ENTITIES', 'UTF-8' ), LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD );
+		$dom->loadHTML(mb_convert_encoding($post_content, 'HTML-ENTITIES', 'UTF-8'), LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
 
 		// Get all <a> tags.
-		$a_tags = $dom->getElementsByTagName( 'a' );
+		$a_tags = $dom->getElementsByTagName('a');
 
 		// Loop through each <a> tag.
-		foreach ( $a_tags as $a_tag ) {
+		foreach ($a_tags as $a_tag) {
 
 			// Check if the <a> tag contains an <img> tag.
-			if ( $a_tag->getElementsByTagName( 'img' )->length > 0 ) {
+			if ($a_tag->getElementsByTagName('img')->length > 0) {
 				continue;
 			}
 
 			// Get the original URL.
-			$original_url = $a_tag->getAttribute( 'href' );
+			$original_url = $a_tag->getAttribute('href');
 
 			// If the URL does not contain the site URL, skip it.
-			if ( stripos( $original_url, get_site_url() ) === false ) {
+			if (stripos($original_url, get_site_url()) === false) {
 				continue;
 			}
 
 			// Replace the URL domain if it matches the site URL.
-			$new_url = str_ireplace( get_site_url(), $this->get_frontend_url(), $original_url );
+			$new_url = str_ireplace(get_site_url(), $this->get_frontend_url(), $original_url);
 
 			// Update the href attribute.
-			$a_tag->setAttribute( 'href', $new_url );
+			$a_tag->setAttribute('href', $new_url);
 		}
 
 		// Save the modified HTML back to post_content.
@@ -230,12 +238,12 @@ class Links {
 		wp_update_post(
 			[
 				'ID'           => $post_id,
-				'post_content' => wp_slash( $new_post_content ),
+				'post_content' => wp_slash($new_post_content),
 			]
 		);
 
 		// Re-add the action.
-		add_action( 'save_post', [ $this, 'override_post_links' ] );
+		add_action('save_post', [$this, 'override_post_links']);
 	}
 
 	/**
@@ -243,11 +251,32 @@ class Links {
 	 *
 	 * @return string|null Trimmed frontend URL or null if not defined.
 	 */
-	private function get_frontend_url(): ?string {
+	private function get_frontend_url(): ?string
+	{
 
 		// Return the frontend URL if defined.
-		if ( defined( 'NEXTJS_FRONTEND_URL' ) ) {
-			return rtrim( NEXTJS_FRONTEND_URL, '/' );
+		if (defined('NEXTJS_FRONTEND_URL')) {
+			return rtrim(NEXTJS_FRONTEND_URL, '/');
+		}
+
+		return null;
+	}
+
+	/**
+	 * Get the preview secret.
+	 *
+	 * @return string|null Preview secret or null if not defined.
+	 */
+	private function get_preview_secret(): ?string
+	{
+
+		// Return the preview secret if defined.
+		if (defined('NEXTJS_PREVIEW_SECRET')) {
+			return NEXTJS_PREVIEW_SECRET;
+		}
+
+		if (class_exists('NextJS_WordPress_Plugin\Settings')) {
+			return Settings::get_setting('preview_secret');
 		}
 
 		return null;

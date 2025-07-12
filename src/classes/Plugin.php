@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Next.js WordPress Plugin: main plugin
  *
@@ -15,6 +16,7 @@ use NextJS_WordPress_Plugin\Links;
 use NextJS_WordPress_Plugin\Blocks;
 use NextJS_WordPress_Plugin\Revalidation;
 use NextJS_WordPress_Plugin\YoastSEO;
+use NextJS_WordPress_Plugin\Settings;
 
 /**
  * Main class for initializing the Next.js WordPress integration plugin.
@@ -22,15 +24,18 @@ use NextJS_WordPress_Plugin\YoastSEO;
  * @author Greg Rickaby
  * @since 1.0.6
  */
-class Plugin {
+class Plugin
+{
 
 	/**
 	 * Constructor.
 	 */
-	public function __construct() {
+	public function __construct()
+	{
 		new Links();
 		new Blocks();
 		new Revalidation();
 		new YoastSEO();
+		new Settings();
 	}
 }
